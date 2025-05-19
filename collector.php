@@ -1,6 +1,6 @@
 <?php
 /*
-	Ïîëó÷àåì äàííûå ñî ñ÷åò÷èêàìè èíòåðôåéñà ñ ìèêðîòèêà è ñîõðàíÿåì èõ â ÁÄ
+	ÐŸÐ¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ð´Ð°Ð½Ð½Ñ‹Ðµ ÑÐ¾ ÑÑ‡ÐµÑ‚Ñ‡Ð¸ÐºÐ°Ð¼Ð¸ Ð¸Ð½Ñ‚ÐµÑ€Ñ„ÐµÐ¹ÑÐ° Ñ Ð¼Ð¸ÐºÑ€Ð¾Ñ‚Ð¸ÐºÐ° Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÐ¼ Ð¸Ñ… Ð² Ð‘Ð”
 	/collector.php?sn=<SERIAL NUMBER>&tx=<INTERFACE OUR BYTES>&rx=<INTERFACE IN BYTES>
 */
 
@@ -28,7 +28,7 @@ if (!is_numeric($device[0][id])) {
 	// update last receiving data
 	$db->query("UPDATE devices SET last_check='".time()."', last_tx='".$_GET[tx]."', last_rx='".$_GET[rx]."' WHERE id='".$device[0][id]."'");
 	// check last received value
-	// Åñëè ïîëó÷èëè ïî ñ÷åò÷èêàì ìåíüøå òðàôèêà ÷åì áûëî, çíà÷èò ñ÷åò÷èê áûë ñáðîøåí.
+	// Ð•ÑÐ»Ð¸ Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ð»Ð¸ Ð¿Ð¾ ÑÑ‡ÐµÑ‚Ñ‡Ð¸ÐºÐ°Ð¼ Ð¼ÐµÐ½ÑŒÑˆÐµ Ñ‚Ñ€Ð°Ñ„Ð¸ÐºÐ° Ñ‡ÐµÐ¼ Ð±Ñ‹Ð»Ð¾, Ð·Ð½Ð°Ñ‡Ð¸Ñ‚ ÑÑ‡ÐµÑ‚Ñ‡Ð¸Ðº Ð±Ñ‹Ð» ÑÐ±Ñ€Ð¾ÑˆÐµÐ½.
 	if ($device[0][last_tx] > $_GET[tx]) {
 		$txBytes = $_GET[tx];
 	} else {
