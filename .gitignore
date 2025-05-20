@@ -1,1 +1,31 @@
-tikstat.sqlite.db
+data/
+# Composer dependencies
+/vendor/
+
+# SQLite DB files
+*.sqlite
+*.sqlite3
+*.sqlite.db
+
+# PHPStorm / VSCode / IDEs
+.idea/
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Composer-generated cache
+composer.lock
+.phpunit.result.cache
+.php-cs-fixer.cache
+
+# Logs (если добавишь логирование)
+logs/
+*.log
+
+# Backup/temporary files
+*.bak
+*.swp
+*.tmp
+

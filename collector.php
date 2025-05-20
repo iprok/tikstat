@@ -1,80 +1,38 @@
 <?php
+/**
+ * collector.php
+ *
+ * Receives traffic stats from MikroTik via HTTP GET and stores delta values in the SQLite database.
+ */
 
-require "init.php";
+require_once __DIR__ . '/vendor/autoload.php';
 
-// Проверка входных параметров
-if (isset($_GET['sn'])
-    && isset($_GET['tx']) && is_numeric($_GET['tx'])
-    && isset($_GET['rx']) && is_numeric($_GET['rx'])
-) {
-    $device_serial = substr($_GET['sn'], 0, 12);
-    $rxNow = (int)$_GET['rx'];
-    $txNow = (int)$_GET['tx'];
-} else {
-    echo 'fail';
+use DB\Database;
+use Models\Device;
+use Services\TrafficService;
+
+$config = require __DIR__ . '/config.php';
+$pdo = Database::getConnection($config['db_path']);
+
+if (!isset($_GET['sn'], $_GET['tx'], $_GET['rx']) || !is_numeric($_GET['tx']) || !is_numeric($_GET['rx'])) {
+    http_response_code(400);
+    echo 'Invalid request';
     exit;
 }
 
-// Проверка устройства
-$stmt = $pdo->prepare("SELECT id, last_tx, last_rx FROM devices WHERE sn = :sn");
-$stmt->execute(['sn' => $device_serial]);
-$device = $stmt->fetch(PDO::FETCH_ASSOC);
+$sn = substr($_GET['sn'], 0, 12);
+$tx = (int)$_GET['tx'];
+$rx = (int)$_GET['rx'];
 
-if (!$device) {
-    $stmt = $pdo->prepare("INSERT INTO devices (sn, last_check, last_tx, last_rx) VALUES (:sn, :check, :tx, :rx)");
-    $stmt->execute(
-        [
-        'sn' => $device_serial,
-        'check' => time(),
-        'tx' => $txNow,
-        'rx' => $rxNow
-        ]
-    );
-    $device_id = $pdo->lastInsertId();
-    $txBytes = $txNow;
-    $rxBytes = $rxNow;
-} else {
-    $device_id = $device['id'];
+$deviceRepo = new Device($pdo);
+$traffic = new TrafficService($pdo);
 
-    // Вычисление дельт
-    $txBytes = ($txNow < $device['last_tx']) ? $txNow : $txNow - $device['last_tx'];
-    $rxBytes = ($rxNow < $device['last_rx']) ? $rxNow : $rxNow - $device['last_rx'];
+$device = $deviceRepo->findOrCreate($sn, $rx, $tx);
 
-    // Обновление last_check/tx/rx
-    $stmt = $pdo->prepare("UPDATE devices SET last_check = :check, last_tx = :tx, last_rx = :rx WHERE id = :id");
-    $stmt->execute(
-        [
-        'check' => time(),
-        'tx' => $txNow,
-        'rx' => $rxNow,
-        'id' => $device_id
-        ]
-    );
-}
+$rxDelta = $rx < $device['last_rx'] ? $rx : $rx - $device['last_rx'];
+$txDelta = $tx < $device['last_tx'] ? $tx : $tx - $device['last_tx'];
 
-// Почасовая агрегация
-$hour_ts = mktime(date('H'), 0, 0);
-$stmt = $pdo->prepare("SELECT id, tx, rx FROM traffic WHERE device_id = :id AND datetime = :dt");
-$stmt->execute(['id' => $device_id, 'dt' => $hour_ts]);
-$entry = $stmt->fetch(PDO::FETCH_ASSOC);
+$deviceRepo->update($device['id'], $rx, $tx);
+$traffic->record($device['id'], $rxDelta, $txDelta);
 
-if ($entry) {
-    $stmt = $pdo->prepare("UPDATE traffic SET tx = tx + :tx, rx = rx + :rx WHERE id = :id");
-    $stmt->execute(
-        [
-        'tx' => $txBytes,
-        'rx' => $rxBytes,
-        'id' => $entry['id']
-        ]
-    );
-} else {
-    $stmt = $pdo->prepare("INSERT INTO traffic (device_id, datetime, tx, rx) VALUES (:id, :dt, :tx, :rx)");
-    $stmt->execute(
-        [
-        'id' => $device_id,
-        'dt' => $hour_ts,
-        'tx' => $txBytes,
-        'rx' => $rxBytes
-        ]
-    );
-}
+echo 'OK';

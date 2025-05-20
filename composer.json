@@ -1,0 +1,11 @@
+{
+    "name": "tikstat/project",
+    "autoload": {
+        "psr-4": {
+            "DB\\": "db/",
+            "Models\\": "models/",
+            "Services\\": "services/"
+        }
+    },
+    "require": {}
+}
