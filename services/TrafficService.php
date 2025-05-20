@@ -13,11 +13,11 @@ class TrafficService
         $this->db = $db;
     }
 
-    public function record(int $deviceId, int $rxDelta, int $txDelta): void
+    public function record(int $deviceId, string $iface, int $rxDelta, int $txDelta): void
     {
         $hour = mktime(date('H'), 0, 0);
-        $stmt = $this->db->prepare("SELECT id FROM traffic WHERE device_id = :id AND datetime = :dt");
-        $stmt->execute(['id' => $deviceId, 'dt' => $hour]);
+        $stmt = $this->db->prepare("SELECT id FROM traffic WHERE device_id = :id AND interface = :iface AND datetime = :dt");
+        $stmt->execute(['id' => $deviceId, 'iface' => $iface, 'dt' => $hour]);
         $entry = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($entry) {
@@ -28,13 +28,15 @@ class TrafficService
                 'id' => $entry['id']
             ]);
         } else {
-            $stmt = $this->db->prepare("INSERT INTO traffic (device_id, datetime, tx, rx) VALUES (:id, :dt, :tx, :rx)");
+            $stmt = $this->db->prepare("INSERT INTO traffic (device_id, interface, datetime, tx, rx) VALUES (:id, :iface, :dt, :tx, :rx)");
             $stmt->execute([
                 'id' => $deviceId,
+                'iface' => $iface,
                 'dt' => $hour,
                 'tx' => $txDelta,
                 'rx' => $rxDelta
             ]);
         }
     }
+
 }
